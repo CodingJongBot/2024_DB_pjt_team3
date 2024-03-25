@@ -160,6 +160,7 @@ def popularity_based_rating(user_input=True, item_cnt=None):
 
     sample = get_output(query).values[:, :].astype(float)
 
+
     # do not change column names
     df = pd.DataFrame(sample, columns=["item", "prediction"])
     # TODO end
@@ -215,14 +216,13 @@ def ibcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
     ]
 
     # item별 유사도 상위 k개
-    query = (
-        "SELECT sb.item_1,sb.sim,sb.item_2,sb.sim/SUM(sb.sim) OVER (PARTITION BY item_1) as norm_sim\
+    query = "SELECT sb.item_1,sb.sim,sb.item_2,sb.sim/SUM(sb.sim) OVER (PARTITION BY item_1) as norm_sim\
             FROM (SELECT item_1,sim,item_2,ROW_NUMBER() OVER (PARTITION BY item_1 ORDER BY sim DESC, item_2 ASC) AS raking\
                 FROM item_similarity) as sb\
-            WHERE sb.raking <="
-        + rec_num
-    )
+            WHERE sb.raking <="+ str(rec_num)
+    
     rs1 = get_output(query)
+
 
     # update null value its average
     query2 = "UPDATE ratings rt\
@@ -235,6 +235,28 @@ def ibcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
             WHERE rt.rating IS NULL;"
 
     rs2 = get_output(query2)
+
+
+    # 1. Num_row / rec_num -> item 수 확인 가능 -> 예제에서는 453개의 item
+    # 2. zeros로 size(453) x size(453) 만들고
+    # 3. item2에 있는 rec_num 수만큼 zeros로 만든 DF에 값 삽입
+    # 4. numpy @ 연산 (행렬곱연산)
+    # 5. 구한 행렬로 가장 높은 평균 평점을 부여 받은 아이템 n개를 추천한다.
+
+    row_count = int((rs1.shape[0])/rec_num)
+    test_df = pd.DataFrame(0, index=range(row_count), columns=range(row_count)).values[:, :]
+
+    mat_rs1 = rs1.values[:,:].astype(float)
+
+    print(test_df)
+    for item in mat_rs1 :
+        # print(item[0],item[2],item[3])
+        test_df[int(item[0])][int(item[2])] = item[3]
+
+        if(test_df[int(item[0])][int(item[2])]  > 0.0 ):
+            print(test_df[item[0]][item[2]])
+    print(test_df)
+
 
     # do not change column names
     df = pd.DataFrame(sample, columns=["user", "item", "prediction"])
