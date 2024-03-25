@@ -215,7 +215,7 @@ def ibcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
     ]
 
     # item별 유사도 상위 k개
-    query = "SELECT sb.item_1,sb.sim,sb.item_2\
+    query = "SELECT sb.item_1,sb.sim,sb.item_2,sb.sim/SUM(sb.sim) OVER (PARTITION BY item_1) as norm_sim\
             FROM (SELECT item_1,sim,item_2,ROW_NUMBER() OVER (PARTITION BY item_1 ORDER BY sim DESC, item_2 ASC) AS raking\
                 FROM item_similarity) as sb\
             WHERE sb.raking <=5 #K"
