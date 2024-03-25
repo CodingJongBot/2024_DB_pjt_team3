@@ -68,7 +68,7 @@ def get_output(query):
     return df
 
 
-"""
+'''
 ## 비개인화 추천 알고리즘 (모든 사용자에게 동일한 아이템을 추천)
 : 과거 데이터를 기반으로 사용자로부터 평점을 가장 많이 부여 받은 아이템을 추천
 
@@ -76,9 +76,7 @@ Popularity by rating count
 1. 사용자가 아이템에 부여한 평점들로 구성된 데이터를 불러온다
 2. 각 아이템에 평점을 부여한 사용자 수를 확인한다.
 3. 가장 많은 평점을 부여 받은 아이템 n개를 추천한다
-"""
-
-
+'''
 # [Algorithm 1] Popularity-based Recommendation - 1 : Popularity by rating count
 def popularity_based_count(user_input=True, item_cnt=None):
     if user_input:
@@ -101,7 +99,7 @@ def popularity_based_count(user_input=True, item_cnt=None):
             LIMIT "
         + str(rec_num)
     )
-    sample = get_output(query)
+    sample = get_output(query).values.tolist()
 
     # do not change column names
     df = pd.DataFrame(sample, columns=["item", "count"])
@@ -113,22 +111,16 @@ def popularity_based_count(user_input=True, item_cnt=None):
     print("Output printed in pbc.txt")
 
 
-"""
-
+'''
 ## 비개인화 추천 알고리즘 (모든 사용자에게 동일한 아이템을 추천)
 : 과거 데이터를 기반으로 사용자로부터 평점을 가장 많이 부여 받은 아이템을 추천
 
 average rating
 1. 사용자가 아이템에 부여한 평점들로 구성된 데이터를 불러온다
-2. 사용자마다 평점을 부여하는 경향성이 다르기 때문에, 평점을 보정한다. 
-  각 사용자마다 최저 평점이 0, 최고 평점이 1이 되도록 보정한다.
-  보정 방식은 명세 참고.
+2. 사용자마다 평점을 부여하는 경향성이 다르기 때문에, 평점을 보정한다. 각 사용자마다 최저 평점이 0, 최고 평점이 1이 되도록 보정한다.
 3. 보정됨 평점을 기반으로 각 아이템마다 사용자들이 부여한 평점의 평균을 구한다.  
 4. 가장 높은 평균 평점을 부여 받은 아이템 n개를 추천한다.
-
-"""
-
-
+'''
 # [Algorithm 1] Popularity-based Recommendation - 2 : Popularity by average rating
 def popularity_based_rating(user_input=True, item_cnt=None):
     if user_input:
@@ -142,8 +134,7 @@ def popularity_based_rating(user_input=True, item_cnt=None):
     # TODO: remove sample, return actual recommendation result as df
     # YOUR CODE GOES HERE !
     # 쿼리의 결과를 sample 변수에 저장하세요.
-    query = (
-        "SELECT sb2.item, AVG(sb2.norm_rating) as avg_norm_rating\
+    query = "SELECT sb2.item, AVG(sb2.norm_rating) as avg_norm_rating\
             FROM (SELECT rt.item, ((rt.rating-sb.min_rating)/sb.rating_range) as norm_rating\
                 FROM \
                 (SELECT r.user, MAX(r.rating) as max_rating, MIN(r.rating) as min_rating ,MAX(r.rating) - MIN(r.rating) as rating_range\
@@ -154,13 +145,9 @@ def popularity_based_rating(user_input=True, item_cnt=None):
             ) AS sb2\
             GROUP BY sb2.item\
             ORDER BY AVG(sb2.norm_rating) DESC\
-            LIMIT "
-        + str(rec_num)
-    )
+            LIMIT "+ str(rec_num)
 
-    sample = get_output(query).values[:, :].astype(float)
-
-
+    sample = get_output(query).values.tolist()
     # do not change column names
     df = pd.DataFrame(sample, columns=["item", "prediction"])
     # TODO end
@@ -171,25 +158,17 @@ def popularity_based_rating(user_input=True, item_cnt=None):
     print("Output printed in pbr.txt")
 
 
-"""
-
+'''
 ## 개인화 추천 알고리즘 (사용자마다 서로 다른 아이템을 추천)
 : 과거 데이터를 기반으로, 내가 좋아한 아이템과 유사한 아이템을 추천한다.
 
 Item-based Collaborative Filtering
 1. 아이템-사용자 평점 데이터와 아이템-아이템 유사도 데이터를 불러온다.
-2. 아이템마다 가장 유사도가 높은 이웃 K개를 구한다.
-  만약 유사도가 같은 경우, 번호가 작은 아이템을 선택한다.
-  K=2 인 경우
-3. 유사도는 예측 평점을 계산할 때 이웃들을 반영하는 비율을 나타낸다. 그러므로, 유사도를 모두 더하
-면 1.0 (100%) 이 되도록 보정한다.
-  보정 방식은 명세 참고
+2. 아이템마다 가장 유사도가 높은 이웃 K개를 구한다. 만약 유사도가 같은 경우, 번호가 작은 아이템을 선택한다.
+3. 유사도는 예측 평점을 계산할 때 이웃들을 반영하는 비율을 나타낸다. 그러므로, 유사도를 모두 더하면 1.0 (100%) 이 되도록 보정한다.
 4. 아이템-사용자 평점 데이터의 빈 공간을 각 아이템의 평균 평점으로 채운다
 5. 보정된 아이템-아이템 유사도 행렬과, 아이템-사용자 평점 행렬을 곱해서 예측 평점을 구한다
-
-"""
-
-
+'''
 # [Algorithm 2] Item-based Recommendation
 def ibcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
     if user_input:
@@ -211,18 +190,13 @@ def ibcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
     # TODO: remove sample, return actual recommendation result as df
     # YOUR CODE GOES HERE !
     # 쿼리의 결과를 sample 변수에 저장하세요.
-    sample = [
-        (user, 50 - x, x / 10) for x in range(50, math.ceil(rec_num * 10) - 1, -1)
-    ]
 
-    # item별 유사도 상위 k개
-    query = "SELECT sb.item_1,sb.sim,sb.item_2,sb.sim/SUM(sb.sim) OVER (PARTITION BY item_1) as norm_sim\
+    # item별 유사도(정규화) 상위 k개
+    query1 = "SELECT sb.item_1,sb.sim,sb.item_2,sb.sim/SUM(sb.sim) OVER (PARTITION BY item_1) as norm_sim\
             FROM (SELECT item_1,sim,item_2,ROW_NUMBER() OVER (PARTITION BY item_1 ORDER BY sim DESC, item_2 ASC) AS raking\
                 FROM item_similarity) as sb\
             WHERE sb.raking <="+ str(rec_num)
-    
-    rs1 = get_output(query)
-
+    rs1 = get_output(query1)
 
     # update null value its average
     query2 = "UPDATE ratings rt\
@@ -233,31 +207,36 @@ def ibcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
             ) rs ON rt.item = rs.item\
             SET rt.rating = rs.avg_rating\
             WHERE rt.rating IS NULL;"
-
     rs2 = get_output(query2)
 
-
+    # Read item user rating(updated)
+    query3 = "SELECT r.item AS item, r.user AS user, r.rating AS rating\
+            FROM ratings r\
+            ORDER BY r.user ASC, r.item ASC"    
+    mat_rating = get_output(query3).pivot(index='item', columns='user', values='rating').astype(float)    
+    
     # 1. Num_row / rec_num -> item 수 확인 가능 -> 예제에서는 453개의 item
-    # 2. zeros로 size(453) x size(453) 만들고
-    # 3. item2에 있는 rec_num 수만큼 zeros로 만든 DF에 값 삽입
-    # 4. numpy @ 연산 (행렬곱연산)
-    # 5. 구한 행렬로 가장 높은 평균 평점을 부여 받은 아이템 n개를 추천한다.
-
     row_count = int((rs1.shape[0])/rec_num)
-    test_df = pd.DataFrame(0, index=range(row_count), columns=range(row_count)).values[:, :]
 
-    mat_rs1 = rs1.values[:,:].astype(float)
+    # 2. 0으로 초기화된 size(453) x size(453) df만들고
+    temp_df = pd.DataFrame(0, index=range(row_count), columns=range(row_count)).values[:, :].astype(float)
+    
+    # 3. item1과 유사한 rec_num개의 item2의 값(index)를 만든 df에 값 삽입(총 item수 x rec_num번)
+    items = rs1.values[:,:].astype(float)
+    for item in items :
+        temp_df[int(item[0])][int(item[2])] = item[3]
+    mat_item_sim = pd.DataFrame(temp_df).astype(float)
 
-    print(test_df)
-    for item in mat_rs1 :
-        # print(item[0],item[2],item[3])
-        test_df[int(item[0])][int(item[2])] = item[3]
+    # 4. 행렬곱 연산 (item x item similarity 행렬 @ item x user rating 행렬)
+    mat_predict= mat_item_sim.dot(mat_rating)
 
-        if(test_df[int(item[0])][int(item[2])]  > 0.0 ):
-            print(test_df[item[0]][item[2]])
-    print(test_df)
-
-
+    # 5. 구한 행렬로 가장 높은 평균 평점을 부여 받은 아이템 n개를 추천한다.
+    sort_result = mat_predict[user].sort_values(ascending=False).head(rec_cnt)    
+    sort_result_user = [user]*rec_cnt
+    sort_result_indices = sort_result.index
+    sort_result_predictions = sort_result.tolist()
+    sample = list(zip(sort_result_user,sort_result_indices,sort_result_predictions))
+    
     # do not change column names
     df = pd.DataFrame(sample, columns=["user", "item", "prediction"])
     # TODO end
@@ -267,7 +246,17 @@ def ibcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
         f.write(tabulate(df, headers=df.columns, tablefmt="psql", showindex=False))
     print("Output printed in ibcf.txt")
 
-
+'''
+(Optional) User-based Collaborative Filtering
+## 개인화 추천 알고리즘 (사용자마다 서로 다른 아이템을 추천)
+: 과거 데이터를 기반으로, 나와 유사한 (취향이 비슷한) 사용자들이 높은 평점을 부여한 아이템
+들을 추천한다
+1. 아이템-사용자 평점 데이터와 사용자-사용자 유사도 데이터를 불러온다
+2. 사용자마다 가장 유사도가 높은 이웃 K개를 구한다. 만약 유사도가 같은 경우, 번호가 작은 사용자를 선택한다.
+3. 유사도는 예측 평점을 계산할 때 이웃들을 반영하는 비율을 나타낸다. 그러므로, 유사도를 모두 더하면 1.0 (100%) 이 되도록 보정한다.
+4. 아이템-사용자 평점 데이터의 빈 공간을 각 사용자의 평균 평점으로 채운다.
+5. 보정된 사용자-사용자 유사도 행렬과, 아이템-사용자 평점 행렬을 곱해서 예측 평점을 구한다.
+'''
 # [Algorithm 3] (Optional) User-based Recommendation
 def ubcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
     if user_input:
@@ -289,9 +278,52 @@ def ubcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
     # TODO: remove sample, return actual recommendation result as df
     # YOUR CODE GOES HERE !
     # 쿼리의 결과를 sample 변수에 저장하세요.
-    sample = [
-        (user, 50 - x, x / 10) for x in range(50, math.ceil(rec_num * 10) - 1, -1)
-    ]
+
+    query1="SELECT sb.user_1,sb.sim,sb.user_2,sb.sim/SUM(sb.sim) OVER (PARTITION BY user_1) as norm_sim\
+            FROM (SELECT user_1,sim,user_2,ROW_NUMBER() OVER (PARTITION BY user_1 ORDER BY sim DESC, user_2 ASC) AS raking\
+                FROM user_similarity) as sb\
+            WHERE sb.raking <="+str(rec_num)
+    rs1 = get_output(query1)
+
+    query2 = "UPDATE ratings rt\
+            JOIN (\
+                SELECT user, AVG(rating) as avg_rating\
+                FROM ratings\
+                GROUP BY user\
+            ) rs ON rt.user = rs.user\
+            SET rt.rating = rs.avg_rating\
+            WHERE rt.rating IS NULL;"
+    rs2 = get_output(query2)
+
+
+    # Read item user rating(updated)
+    query3 = "SELECT r.item AS item, r.user AS user, r.rating AS rating\
+            FROM ratings r\
+            ORDER BY r.user ASC, r.item ASC"    
+    mat_rating = get_output(query3).pivot(index='item', columns='user', values='rating').astype(float)    
+    
+    # 1. Num_row / rec_num -> item 수 확인 가능 -> 예제에서는 292개의 user
+    row_count = int((rs1.shape[0])/rec_num)
+
+    # 2. 0으로 초기화된 size(292) x size(292) df만들고
+    temp_df = pd.DataFrame(0, index=range(row_count), columns=range(row_count)).values[:, :].astype(float)
+    
+    # 3. user1과 유사한 rec_num개의 user2의 값(index)를 만든 df에 값 삽입(총 user수 x rec_num번)
+    users = rs1.values[:,:].astype(float)
+    for u in users :
+        temp_df[int(u[0])][int(u[2])] = u[3]
+    mat_user_sim = pd.DataFrame(temp_df).astype(float)
+    
+    
+    # 4. 행렬곱 연산 (item x user rating 행렬 @ user x user similarity 행렬)
+    mat_predict= mat_rating.dot(mat_user_sim.T) # need Transpose
+    
+    # 5. 구한 행렬로 가장 높은 평균 평점을 부여 받은 아이템 n개를 추천한다.
+    sort_result = mat_predict[user].sort_values(ascending=False).head(rec_cnt)    
+    sort_result_user = [user]*rec_cnt
+    sort_result_indices = sort_result.index
+    sort_result_predictions = sort_result.tolist()
+    sample = list(zip(sort_result_user,sort_result_indices,sort_result_predictions))
 
     # do not change column names
     df = pd.DataFrame(sample, columns=["user", "item", "prediction"])
