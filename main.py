@@ -225,6 +225,7 @@ def ibcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
     items = rs1.values[:,:].astype(float)
     for item in items :
         temp_df[int(item[0])][int(item[2])] = item[3]
+        #temp_df[int(item[2])][int(item[0])] = item[3]
     mat_item_sim = pd.DataFrame(temp_df).astype(float)
 
     # 4. 행렬곱 연산 (item x item similarity 행렬 @ item x user rating 행렬)
@@ -312,6 +313,7 @@ def ubcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
     users = rs1.values[:,:].astype(float)
     for u in users :
         temp_df[int(u[0])][int(u[2])] = u[3]
+        # temp_df[int(u[2])][int(u[0])] = u[3]
     mat_user_sim = pd.DataFrame(temp_df).astype(float)
     
     
