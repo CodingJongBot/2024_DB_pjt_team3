@@ -87,12 +87,11 @@ def popularity_based_count(user_input=True, item_cnt=None):
             GROUP BY r.item\
             ORDER BY COUNT(r.user) DESC, r.item ASC\
             LIMIT "+str(rec_num)
-     #Popularity 계산은 모든 아이템을 이용하되, 최종 추천은 번호가 150이상 350 미만인 item 중에서 입력된 개수만큼 선택
 
     sample = get_output(query).values.tolist()
+    
     # do not change column names
     df = pd.DataFrame(sample, columns=['item', 'count'])
-
     # TODO end
 
     # Do not change this part
@@ -139,7 +138,6 @@ def popularity_based_rating(user_input=True, item_cnt=None):
             LIMIT "+ str(rec_num)
     #i번 사용자(Ui)가 1개의 아이템에만 평점을 부여한 경우, min(Ri) = 0으로 계산한다
     #모두 같은 값인 경우는? ex) 5 5 5 5 ->  5-5/5-5 연산 불가
-    #Popularity 계산은 모든 아이템을 이용하되, 최종 추천은 번호가 150이상 350 미만인 item 중에서 입력된 개수만큼 선택
 
     sample = get_output(query).values.tolist()
 
@@ -172,7 +170,6 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
     # YOUR CODE GOES HERE !
     # 쿼리의 결과를 sample 변수에 저장하세요.
 
-    # item별 유사도(정규화) 상위 k(5)개
     query1 = "SELECT sb.item_1,\
                     sb.sim,\
                     sb.item_2,\
@@ -185,10 +182,16 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
                 FROM item_similarity\
                 ) AS sb\
             WHERE sb.raking <= 5"
-    rs1 = get_output(query1)
-
-    # change Query
-    query2 = "SELECT r.item AS item, r.user AS user, IFNULL(r.rating,rt.avg_rating) AS rating\
+    
+    rs1 = get_output(query1)     
+    row_count = int((rs1.shape[0])/5)
+    temp_df = pd.DataFrame(0, index=range(row_count), columns=range(row_count)).values[:, :].astype(float)
+    items = rs1.values[:,:].astype(float)
+    for item in items :
+        temp_df[int(item[0])][int(item[2])] = item[3]
+    mat_item_sim = pd.DataFrame(temp_df).astype(float)
+    
+    query2 = "SELECT r.item AS item, r.user AS user, r.rating AS rating, IFNULL(r.rating,rt.avg_rating) AS cal_rating\
             FROM ratings r\
             LEFT JOIN (\
                 SELECT item, AVG(rating) AS avg_rating\
@@ -197,34 +200,24 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
             ) rt ON r.item = rt.item\
             ORDER BY r.user ASC, r.item ASC;"
     rs2 = get_output(query2)
-    mat_rating = rs2.pivot(index='item', columns='user', values='rating').astype(float)    
-    
-    # 1. Num_row / 5 -> item 수 확인 가능 -> 예제에서는 453개의 item
-    row_count = int((rs1.shape[0])/5)
-
-    # 2. 0으로 초기화된 size(453) x size(453) df만들고
-    temp_df = pd.DataFrame(0, index=range(row_count), columns=range(row_count)).values[:, :].astype(float)
-    
-    # 3. item1과 유사한 5 item2의 값(index)를 만든 df에 값 삽입(총 item수 x 5)
-    items = rs1.values[:,:].astype(float)
-    for item in items :
-        temp_df[int(item[0])][int(item[2])] = item[3]
-    mat_item_sim = pd.DataFrame(temp_df).astype(float)
-
-    # 4. 행렬곱 연산 (item x item similarity 행렬 @ item x user rating 행렬)
+    mat_rating = rs2.pivot(index='item', columns='user', values='cal_rating').astype(float)    
+   
     mat_predict= mat_item_sim.dot(mat_rating).astype(float).round(4)
 
-    # 5. 구한 행렬로 가장 높은 평균 평점을 부여 받은 아이템 n개를 추천한다.
     sort_result = mat_predict[user].sort_values(ascending=False).head(rec_num)    
     sort_result_user = [user]*rec_num
     sort_result_indices = sort_result.index
     sort_result_predictions = sort_result.tolist()
     sample = list(zip(sort_result_user,sort_result_indices,sort_result_predictions))
     
-    #IBCF, UBCF 계산은 모든 아이템을 이용하되, 최종 추천 시 추천 대상 사용자가 이미 평점을 기록한 아이템은 추천 대상에서 제외
-
     # do not change column names
     df = pd.DataFrame(sample, columns=['user', 'item', 'prediction']).sort_values(by=['prediction', 'item'], ascending=[False, True])
+    
+    #IBCF, UBCF 계산은 모든 아이템을 이용하되, 최종 추천 시 추천 대상 사용자가 이미 평점을 기록한 아이템은 추천 대상에서 제외
+    for item_number in df['item'].unique():
+        rating = rs2.loc[(rs2['item'] == item_number) & (rs2['user'] == user), 'rating'].values
+        if len(rating) == 0 or rating[0] is None:
+            df.drop(df[df['item'] == item_number].index, inplace=True) 
     # TODO end
 
     # Do not change this part
@@ -267,9 +260,15 @@ def ubcf(user_input=True, user_id=None, item_cnt=None):
                 ) AS sb\
             WHERE sb.raking <= 5"
     rs1 = get_output(query1)
+
+    row_count = int((rs1.shape[0])/5)
+    temp_df = pd.DataFrame(0, index=range(row_count), columns=range(row_count)).values[:, :].astype(float)
+    users = rs1.values[:,:].astype(float)
+    for u in users :
+        temp_df[int(u[0])][int(u[2])] = u[3]
+    mat_user_sim = pd.DataFrame(temp_df).astype(float)
     
-    # change Query
-    query2 = "SELECT r.item AS item, r.user AS user, IFNULL(r.rating,rt.avg_rating) AS rating\
+    query2 = "SELECT r.item AS item, r.user AS user, r.rating AS rating, IFNULL(r.rating,rt.avg_rating) AS cal_rating\
             FROM ratings r\
             LEFT JOIN (\
                 SELECT user, AVG(rating) AS avg_rating\
@@ -278,33 +277,25 @@ def ubcf(user_input=True, user_id=None, item_cnt=None):
             ) rt ON r.user = rt.user\
             ORDER BY r.user ASC, r.item ASC;"
     rs2= get_output(query2)
-    mat_rating =rs2.pivot(index='item', columns='user', values='rating').astype(float)    
     
-    # 1. Num_row / 5 -> item 수 확인 가능 -> 예제에서는 292개의 user
-    row_count = int((rs1.shape[0])/5)
-
-    # 2. 0으로 초기화된 size(292) x size(292) df만들고
-    temp_df = pd.DataFrame(0, index=range(row_count), columns=range(row_count)).values[:, :].astype(float)
+    mat_rating =rs2.pivot(index='item', columns='user', values='cal_rating').astype(float)    
     
-    # 3. user1과 유사한 5개의 user2의 값(index)를 만든 df에 값 삽입(총 user수 x 5번)
-    users = rs1.values[:,:].astype(float)
-    for u in users :
-        temp_df[int(u[0])][int(u[2])] = u[3]
-    mat_user_sim = pd.DataFrame(temp_df).astype(float)
-        
-    # 4. 행렬곱 연산 (item x user rating 행렬 @ user x user similarity 행렬)
-    mat_predict= mat_rating.dot(mat_user_sim.T).astype(float).round(4) # need Transpose
+    mat_predict= mat_rating.dot(mat_user_sim.T).astype(float).round(4) 
     
-    # 5. 구한 행렬로 가장 높은 평균 평점을 부여 받은 아이템 n개를 추천한다.    
     sort_result = mat_predict[user].sort_values(ascending=False).head(rec_num)    
     sort_result_user = [user]*rec_num
     sort_result_indices = sort_result.index
     sort_result_predictions = sort_result.tolist()
     sample = list(zip(sort_result_user,sort_result_indices,sort_result_predictions))    
-    #IBCF, UBCF 계산은 모든 아이템을 이용하되, 최종 추천 시 추천 대상 사용자가 이미 평점을 기록한 아이템은 추천 대상에서 제외
     
-    # do not change column names
+    # do not change column names    
     df = pd.DataFrame(sample, columns=['user', 'item', 'prediction']).sort_values(by=['prediction', 'item'], ascending=[False, True])
+
+    #IBCF, UBCF 계산은 모든 아이템을 이용하되, 최종 추천 시 추천 대상 사용자가 이미 평점을 기록한 아이템은 추천 대상에서 제외
+    for item_number in df['item'].unique():
+        rating = rs2.loc[(rs2['item'] == item_number) & (rs2['user'] == user), 'rating'].values
+        if len(rating) == 0 or rating[0] is None:
+            df.drop(df[df['item'] == item_number].index, inplace=True) 
     # TODO end
 
     # Do not change this part
