@@ -4,3 +4,4 @@
 3. 같은 input값 넣어서 다른 사람들 결과랑 비교
 4. SQL query Logic 문제 없는지
 5. SQL query후 결과가 원하는 형태로 정렬되어 결과에 영향을 안 미치는지
+6. input되는 Similarity 값 항상 정방행렬인지 (아니라면 index swap해서 입력)
