@@ -170,26 +170,25 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
     # YOUR CODE GOES HERE !
     # 쿼리의 결과를 sample 변수에 저장하세요.
 
-    query1 = "SELECT sb.item_1,\
-                    sb.sim,\
-                    sb.item_2,\
-                    ROUND(sb.sim/SUM(sb.sim) OVER (PARTITION BY item_1),4) AS norm_sim\
-            FROM (\
-                SELECT item_1,\
-                sim,\
-                item_2,\
-                ROW_NUMBER() OVER (PARTITION BY item_1 ORDER BY sim DESC, item_2 ASC) AS raking\
-                FROM item_similarity\
-                ) AS sb\
-            WHERE sb.raking <= 5"
-    
-    rs1 = get_output(query1)     
-    row_count = int((rs1.shape[0])/5)
-    temp_df = pd.DataFrame(0, index=range(row_count), columns=range(row_count)).values[:, :].astype(float)
-    items = rs1.values[:,:].astype(float)
-    for item in items :
-        temp_df[int(item[0])][int(item[2])] = item[3]
-    mat_item_sim = pd.DataFrame(temp_df).astype(float)
+    query1="SELECT im.item_1 as it1,\
+                    IFNULL(sb2.norm_sim,0) as cal_sim,\
+                    im.item_2 as it2\
+            FROM item_similarity AS im\
+            LEFT JOIN(\
+                SELECT sb.item_1,\
+                        sb.sim,\
+                        sb.item_2,\
+                        ROUND(sb.sim/SUM(sb.sim) OVER (PARTITION BY item_1),4) AS norm_sim\
+                FROM (\
+                    SELECT item_1,\
+                            sim,\
+                            item_2,\
+                            ROW_NUMBER() OVER (PARTITION BY item_1 ORDER BY sim DESC, item_2 ASC) AS raking\
+                    FROM item_similarity\
+                    ) AS sb\
+                WHERE sb.raking <= 5\
+            ) AS sb2 ON im.item_1 = sb2.item_1 and im.item_2 = sb2.item_2;"    
+    mat_item_sim = get_output(query1).pivot(index='it1', columns='it2', values='cal_sim').astype(float)    
     
     query2 = "SELECT r.item AS item, r.user AS user, r.rating AS rating, IFNULL(r.rating,rt.avg_rating) AS cal_rating\
             FROM ratings r\
@@ -199,9 +198,8 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
                 GROUP BY item\
             ) rt ON r.item = rt.item\
             ORDER BY r.user ASC, r.item ASC;"
-    rs2 = get_output(query2)
-    mat_rating = rs2.pivot(index='item', columns='user', values='cal_rating').astype(float)    
-   
+    rs = get_output(query2)
+    mat_rating = rs.pivot(index='item', columns='user', values='cal_rating').astype(float)       
     mat_predict= mat_item_sim.dot(mat_rating).astype(float).round(4)
 
     sort_result = mat_predict[user].sort_values(ascending=False).head(rec_num)    
@@ -215,7 +213,7 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
     
     #IBCF, UBCF 계산은 모든 아이템을 이용하되, 최종 추천 시 추천 대상 사용자가 이미 평점을 기록한 아이템은 추천 대상에서 제외
     for item_number in df['item'].unique():
-        rating = rs2.loc[(rs2['item'] == item_number) & (rs2['user'] == user), 'rating'].values
+        rating = rs.loc[(rs['item'] == item_number) & (rs['user'] == user), 'rating'].values
         if len(rating) == 0 or rating[0] is None:
             df.drop(df[df['item'] == item_number].index, inplace=True) 
     # TODO end
@@ -246,27 +244,50 @@ def ubcf(user_input=True, user_id=None, item_cnt=None):
     # YOUR CODE GOES HERE !
     # 쿼리의 결과를 sample 변수에 저장하세요.
 
-    # item별 유사도(정규화) 상위 k(5)개
-    query1 = "SELECT sb.user_1,\
-                    sb.sim,\
-                    sb.user_2,\
-                    ROUND(sb.sim/SUM(sb.sim) OVER (PARTITION BY user_1),4) AS norm_sim\
-            FROM (\
-                SELECT user_1,\
-                sim,\
-                user_2,\
-                ROW_NUMBER() OVER (PARTITION BY user_1 ORDER BY sim DESC, user_2 ASC) AS raking\
-                FROM user_similarity\
-                ) AS sb\
-            WHERE sb.raking <= 5"
-    rs1 = get_output(query1)
+    # # item별 유사도(정규화) 상위 k(5)개
+    # query1 = "SELECT sb.user_1,\
+    #                 sb.sim,\
+    #                 sb.user_2,\
+    #                 ROUND(sb.sim/SUM(sb.sim) OVER (PARTITION BY user_1),4) AS norm_sim\
+    #         FROM (\
+    #             SELECT user_1,\
+    #             sim,\
+    #             user_2,\
+    #             ROW_NUMBER() OVER (PARTITION BY user_1 ORDER BY sim DESC, user_2 ASC) AS raking\
+    #             FROM user_similarity\
+    #             ) AS sb\
+    #         WHERE sb.raking <= 5"
+    # rs1 = get_output(query1)
 
-    row_count = int((rs1.shape[0])/5)
-    temp_df = pd.DataFrame(0, index=range(row_count), columns=range(row_count)).values[:, :].astype(float)
-    users = rs1.values[:,:].astype(float)
-    for u in users :
-        temp_df[int(u[0])][int(u[2])] = u[3]
-    mat_user_sim = pd.DataFrame(temp_df).astype(float)
+    # row_count = int((rs1.shape[0])/5)
+    # temp_df = pd.DataFrame(0, index=range(row_count), columns=range(row_count)).values[:, :].astype(float)
+    # users = rs1.values[:,:].astype(float)
+    # for u in users :
+    #     temp_df[int(u[0])][int(u[2])] = u[3]
+    # mat_user_sim = pd.DataFrame(temp_df).astype(float)
+
+
+    query1="SELECT um.user_1 as us1,\
+                    IFNULL(sb2.norm_sim,0) as cal_sim,\
+                    um.user_2 as us2\
+            FROM user_similarity AS um\
+            LEFT JOIN(\
+                SELECT sb.user_1,\
+                        sb.sim,\
+                        sb.user_2,\
+                        ROUND(sb.sim/SUM(sb.sim) OVER (PARTITION BY user_1),4) AS norm_sim\
+                FROM (\
+                    SELECT user_1,\
+                            sim,\
+                            user_2,\
+                            ROW_NUMBER() OVER (PARTITION BY user_1 ORDER BY sim DESC, user_2 ASC) AS raking\
+                    FROM user_similarity\
+                    ) AS sb\
+                WHERE sb.raking <= 5\
+            ) AS sb2 ON um.user_1 = sb2.user_1 and um.user_2 = sb2.user_2;"    
+    mat_user_sim = get_output(query1).pivot(index='us1', columns='us2', values='cal_sim').astype(float)    
+
+
     
     query2 = "SELECT r.item AS item, r.user AS user, r.rating AS rating, IFNULL(r.rating,rt.avg_rating) AS cal_rating\
             FROM ratings r\
@@ -276,10 +297,8 @@ def ubcf(user_input=True, user_id=None, item_cnt=None):
                 GROUP BY user\
             ) rt ON r.user = rt.user\
             ORDER BY r.user ASC, r.item ASC;"
-    rs2= get_output(query2)
-    
-    mat_rating =rs2.pivot(index='item', columns='user', values='cal_rating').astype(float)    
-    
+    rs2= get_output(query2)    
+    mat_rating =rs2.pivot(index='item', columns='user', values='cal_rating').astype(float)        
     mat_predict= mat_rating.dot(mat_user_sim.T).astype(float).round(4) 
     
     sort_result = mat_predict[user].sort_values(ascending=False).head(rec_num)    

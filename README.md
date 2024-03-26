@@ -16,3 +16,39 @@
 ->이미 존재한 값은 빼야함.
 4) 계산은 소수점 아래 4자리까지 반올림한다. *SQL: ROUND(x, 4) 
 5) 출력 순서: prediction기준 내림차순, prediction 값이 동일한 아이템이 있을 경우 item 번호가 작은 것부터 오름차순 출력
+
+
+
+
+*Test - Algo2 행렬곱까지 단일 Query(속도문제)
+
+SELECT que2.user as sol_user, que1.it1 as sol_item, SUM(que1.cal_sim * que2.cal_rating) AS sol_predict
+FROM (SELECT im.item_1 as it1,
+            IFNULL(sb2.norm_sim,0) as cal_sim,
+            im.item_2 as it2
+    FROM item_similarity AS im
+    LEFT JOIN(
+        SELECT sb.item_1,
+                sb.sim,
+                sb.item_2,
+                ROUND(sb.sim/SUM(sb.sim) OVER (PARTITION BY item_1),4) AS norm_sim
+        FROM (
+            SELECT item_1,
+                    sim,
+                    item_2,
+                    ROW_NUMBER() OVER (PARTITION BY item_1 ORDER BY sim DESC, item_2 ASC) AS raking
+            FROM item_similarity
+            ) AS sb
+        WHERE sb.raking <= 5
+    ) AS sb2 ON im.item_1 = sb2.item_1 and im.item_2 = sb2.item_2) AS que1
+JOIN (
+        SELECT r.item AS item, r.user AS user, r.rating AS rating, IFNULL(r.rating,rt.avg_rating) AS cal_rating
+        FROM ratings r
+        LEFT JOIN (
+            SELECT item, AVG(rating) AS avg_rating
+            FROM ratings
+            GROUP BY item
+        ) rt ON r.item = rt.item
+        ORDER BY r.user ASC, r.item ASC) AS que2
+ON que1.it2 = que2.item
+GROUP BY que1.it1,que2.user;
