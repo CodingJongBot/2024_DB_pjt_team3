@@ -213,6 +213,20 @@ def ibcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
     query3 = "SELECT r.item AS item, r.user AS user, r.rating AS rating\
             FROM ratings r\
             ORDER BY r.user ASC, r.item ASC"    
+    
+
+    # change Query
+    # query3 = "SELECT r.item AS item, r.user AS user, IFNULL(r.rating,rt.avg_rating) AS rating\
+    #         FROM ratings r\
+    #         LEFT JOIN (\
+    #             SELECT item, AVG(rating) AS avg_rating\
+    #             FROM ratings\
+    #             GROUP BY item\
+    #         ) rt ON r.item = rt.item\
+    #         ORDER BY r.user ASC, r.item ASC;"
+
+
+
     mat_rating = get_output(query3).pivot(index='item', columns='user', values='rating').astype(float)    
     
     # 1. Num_row / rec_num -> item 수 확인 가능 -> 예제에서는 453개의 item
@@ -225,7 +239,6 @@ def ibcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
     items = rs1.values[:,:].astype(float)
     for item in items :
         temp_df[int(item[0])][int(item[2])] = item[3]
-        #temp_df[int(item[2])][int(item[0])] = item[3]
     mat_item_sim = pd.DataFrame(temp_df).astype(float)
 
     # 4. 행렬곱 연산 (item x item similarity 행렬 @ item x user rating 행렬)
@@ -301,6 +314,17 @@ def ubcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
     query3 = "SELECT r.item AS item, r.user AS user, r.rating AS rating\
             FROM ratings r\
             ORDER BY r.user ASC, r.item ASC"    
+    
+    # change Query
+    # query3 = "SELECT r.item AS item, r.user AS user, IFNULL(r.rating,rt.avg_rating) AS rating\
+    #         FROM ratings r\
+    #         LEFT JOIN (\
+    #             SELECT user, AVG(rating) AS avg_rating\
+    #             FROM ratings\
+    #             GROUP BY user\
+    #         ) rt ON r.user = rt.user\
+    #         ORDER BY r.user ASC, r.item ASC;"
+
     mat_rating = get_output(query3).pivot(index='item', columns='user', values='rating').astype(float)    
     
     # 1. Num_row / rec_num -> item 수 확인 가능 -> 예제에서는 292개의 user
@@ -313,7 +337,6 @@ def ubcf(user_input=True, user_id=None, rec_threshold=None, rec_max_cnt=None):
     users = rs1.values[:,:].astype(float)
     for u in users :
         temp_df[int(u[0])][int(u[2])] = u[3]
-        # temp_df[int(u[2])][int(u[0])] = u[3]
     mat_user_sim = pd.DataFrame(temp_df).astype(float)
     
     
