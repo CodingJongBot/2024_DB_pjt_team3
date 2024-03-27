@@ -199,11 +199,11 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
             ) rt ON r.item = rt.item\
             ORDER BY r.user ASC, r.item ASC;"
     rs = get_output(query2)
-    # rs.to_csv("check_algo rs.csv")
+    rs.to_csv("check_algo rs.csv")
 
     mat_rating = rs.pivot(index='item', columns='user', values='cal_rating').astype(float)       
     mat_predict= mat_item_sim.dot(mat_rating).astype(float).round(4)    
-    # mat_predict.to_csv("check_algo2_predict.csv")
+    mat_predict.to_csv("check_algo2_predict.csv")
 
     sort_result = mat_predict[user].sort_values(ascending=False)
     sort_result_user = [user]*rec_num
@@ -212,7 +212,7 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
     sample = list(zip(sort_result_user,sort_result_indices,sort_result_predictions))
     df = pd.DataFrame(sample, columns=['user', 'item', 'prediction']).sort_values(by=['prediction', 'item'], ascending=[False, True])
 
-    # df.to_csv('check_algo2.csv')
+    df.to_csv('check_algo2.csv')
     #IBCF, UBCF 계산은 모든 아이템을 이용하되, 최종 추천 시 추천 대상 사용자가 이미 평점을 기록한 아이템은 추천 대상에서 제외
     for item_number in df['item'].unique():
         rating = rs.loc[(rs['item'] == item_number) & (rs['user'] == user), 'rating'].values
@@ -221,7 +221,7 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
         else:
             df.drop(df[df['item'] == item_number].index, inplace=True)
     df = df[:rec_num]
-
+    df.to_csv('check_algo2_remove.csv')
     # TODO end
     # Do not change this part
     with open('ibcf.txt', 'w') as f:
