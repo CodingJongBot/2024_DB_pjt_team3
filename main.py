@@ -244,28 +244,6 @@ def ubcf(user_input=True, user_id=None, item_cnt=None):
     # YOUR CODE GOES HERE !
     # 쿼리의 결과를 sample 변수에 저장하세요.
 
-    # # item별 유사도(정규화) 상위 k(5)개
-    # query1 = "SELECT sb.user_1,\
-    #                 sb.sim,\
-    #                 sb.user_2,\
-    #                 ROUND(sb.sim/SUM(sb.sim) OVER (PARTITION BY user_1),4) AS norm_sim\
-    #         FROM (\
-    #             SELECT user_1,\
-    #             sim,\
-    #             user_2,\
-    #             ROW_NUMBER() OVER (PARTITION BY user_1 ORDER BY sim DESC, user_2 ASC) AS raking\
-    #             FROM user_similarity\
-    #             ) AS sb\
-    #         WHERE sb.raking <= 5"
-    # rs1 = get_output(query1)
-
-    # row_count = int((rs1.shape[0])/5)
-    # temp_df = pd.DataFrame(0, index=range(row_count), columns=range(row_count)).values[:, :].astype(float)
-    # users = rs1.values[:,:].astype(float)
-    # for u in users :
-    #     temp_df[int(u[0])][int(u[2])] = u[3]
-    # mat_user_sim = pd.DataFrame(temp_df).astype(float)
-
 
     query1="SELECT um.user_1 as us1,\
                     IFNULL(sb2.norm_sim,0) as cal_sim,\
