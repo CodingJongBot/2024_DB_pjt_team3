@@ -111,9 +111,6 @@ def popularity_based_rating(user_input=True, item_cnt=None):
     print("=" * 99)
 
     # TODO: remove sample, return actual recommendation result as df
-    # YOUR CODE GOES HERE !
-    # 쿼리의 결과를 sample 변수에 저장하세요.
-          
     query= "SELECT sb2.item, ROUND(AVG(sb2.norm_rating),4) as avg_norm_rating\
             FROM (\
                 SELECT \
@@ -136,7 +133,6 @@ def popularity_based_rating(user_input=True, item_cnt=None):
             GROUP BY sb2.item\
             ORDER BY avg_norm_rating DESC,sb2.item ASC\
             LIMIT "+ str(rec_num)
-    #i번 사용자(Ui)가 1개의 아이템에만 평점을 부여한 경우, min(Ri) = 0으로 계산한다
     #모두 같은 값인 경우는? ex) 5 5 5 5 ->  5-5/5-5 연산 불가
 
     sample = get_output(query).values.tolist()
@@ -167,9 +163,6 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
     print(f'Recommendations for user {user}')
 
     # TODO: remove sample, return actual recommendation result as df
-    # YOUR CODE GOES HERE !
-    # 쿼리의 결과를 sample 변수에 저장하세요.
-
     query1="SELECT im.item_1 as it1,\
                     IFNULL(sb2.norm_sim,0) as cal_sim,\
                     im.item_2 as it2\
@@ -199,30 +192,25 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
             ) rt ON r.item = rt.item\
             ORDER BY r.user ASC, r.item ASC;"
     rs = get_output(query2)
-    rs.to_csv("check_algo rs.csv")
 
     mat_rating = rs.pivot(index='item', columns='user', values='cal_rating').astype(float)       
     mat_predict= mat_item_sim.dot(mat_rating).astype(float).round(4)    
-    mat_predict.to_csv("check_algo2_predict.csv")
 
-    sort_result = mat_predict[user].sort_values(ascending=False)
-    sort_result_user = [user]*rec_num
-    sort_result_indices = sort_result.index
-    sort_result_predictions = sort_result.tolist()
-    sample = list(zip(sort_result_user,sort_result_indices,sort_result_predictions))
-    df = pd.DataFrame(sample, columns=['user', 'item', 'prediction']).sort_values(by=['prediction', 'item'], ascending=[False, True])
-
-    df.to_csv('check_algo2.csv')
-    #IBCF, UBCF 계산은 모든 아이템을 이용하되, 최종 추천 시 추천 대상 사용자가 이미 평점을 기록한 아이템은 추천 대상에서 제외
+    sort_result = mat_predict[user]#.sort_values(ascending=False)
+    sample = list(zip([user]*len(sort_result),sort_result.index,sort_result.tolist()))
+    
+    # do not change column names    
+    df = pd.DataFrame(sample, columns=['user', 'item', 'prediction'])
     for item_number in df['item'].unique():
         rating = rs.loc[(rs['item'] == item_number) & (rs['user'] == user), 'rating'].values
         if len(rating) == 0 or rating[0] is None:
             pass
         else:
             df.drop(df[df['item'] == item_number].index, inplace=True)
-    df = df[:rec_num]
-    df.to_csv('check_algo2_remove.csv')
+
+    df = df.sort_values(by=['prediction', 'item'], ascending=[False, True])[:rec_num]
     # TODO end
+
     # Do not change this part
     with open('ibcf.txt', 'w') as f:
         f.write(tabulate(df, headers=df.columns, tablefmt='psql', showindex=False))
@@ -246,9 +234,6 @@ def ubcf(user_input=True, user_id=None, item_cnt=None):
     print(f'Recommendations for user {user}')
 
     # TODO: remove sample, return actual recommendation result as df
-    # YOUR CODE GOES HERE !
-    # 쿼리의 결과를 sample 변수에 저장하세요.
-
     query1="SELECT um.user_1 as us1,\
                     IFNULL(sb2.norm_sim,0) as cal_sim,\
                     um.user_2 as us2\
@@ -281,24 +266,20 @@ def ubcf(user_input=True, user_id=None, item_cnt=None):
     mat_rating =rs.pivot(index='item', columns='user', values='cal_rating').astype(float)        
     mat_predict= mat_rating.dot(mat_user_sim.T).astype(float).round(4) 
     
-    sort_result = mat_predict[user].sort_values(ascending=False)
-    sort_result_user = [user]*rec_num
-    sort_result_indices = sort_result.index
-    sort_result_predictions = sort_result.tolist()
-    sample = list(zip(sort_result_user,sort_result_indices,sort_result_predictions))    
-    
-    # do not change column names    
-    df = pd.DataFrame(sample, columns=['user', 'item', 'prediction']).sort_values(by=['prediction', 'item'], ascending=[False, True])
+    sort_result = mat_predict[user]#.sort_values(ascending=False)
+    sample = list(zip([user]*len(sort_result),sort_result.index,sort_result.tolist()))    
 
-    #IBCF, UBCF 계산은 모든 아이템을 이용하되, 최종 추천 시 추천 대상 사용자가 이미 평점을 기록한 아이템은 추천 대상에서 제외
+    # do not change column names    
+    df = pd.DataFrame(sample, columns=['user', 'item', 'prediction'])
+
     for item_number in df['item'].unique():
         rating = rs.loc[(rs['item'] == item_number) & (rs['user'] == user), 'rating'].values
         if len(rating) == 0 or rating[0] is None:
             pass
         else:
             df.drop(df[df['item'] == item_number].index, inplace=True)
+    df = df.sort_values(by=['prediction', 'item'], ascending=[False, True])[:rec_num]
     # TODO end
-    df = df[:rec_num]
 
     # Do not change this part
     with open('ubcf.txt', 'w') as f:
