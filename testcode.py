@@ -57,7 +57,12 @@ def run_test(step_user=100,step_rec_num=100,tc=1):
                 if err_cnt==0:
                     rs.write("All Pass")
                 rs.write("\n")
+    with open('testresult.txt','w') as init:
+        init.write("################################\n")
+        init.write("#########   Test End   #########\n")
+        init.write("################################\n")
 
+        
 # 1. Prepare your code (code1, code2)
 # 2. Rename file usercode1.py, usercode2.py
 # 3. Place all file in same director (testcode.py, usercode1.py, usercode2.py)
