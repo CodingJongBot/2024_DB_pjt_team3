@@ -172,8 +172,8 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
     query_rating=f"""
         select user,item,
         case 
-        when rating is null then round(avg(rating) over (partition by item),4)
-        else round(rating,4)
+        when rating is null then avg(rating) over (partition by item)
+        else rating
         end as rating_null_filled
         from ratings
         """
@@ -194,14 +194,14 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
         i_similarity=df_similarity[df_similarity['item_1']==i_unique_item]
         i_rating=df_rating_user[df_rating_user['item'].isin(i_similarity['item_2'])]
         i_score=i_similarity.values[:,-1].astype(float)*i_rating.values[:,-1].astype(float)
-        scores.append(round(i_score.sum(),4))
+        scores.append(i_score.sum())
     
     rank_dict={'item':unique_item,'scores':scores}
-    df_rank=pd.DataFrame(rank_dict)
+    df_rank=pd.DataFrame(rank_dict).round(4)
     df_rank=df_rank[df_rank['item'].isin(df_user_notrated['item'])]
     df_rank=df_rank.sort_values(by=['scores','item'],ascending=[False,True])
 
-    df=df_rank[:rec_num].round(4)
+    df=df_rank[:rec_num]
     df['user']=user
     df.rename(columns={'scores': 'prediction'}, inplace=True)
     df = df[['user', 'item', 'prediction']]
@@ -245,8 +245,8 @@ def ubcf(user_input=True, user_id=None, item_cnt=None):
     query_rating=f"""
         select user,item,
         case 
-        when rating is null then round(avg(rating) over (partition by user),4)
-        else round(rating,4)
+        when rating is null then avg(rating) over (partition by user)
+        else rating
         end as rating_null_filled
         from ratings
         """
@@ -271,7 +271,7 @@ def ubcf(user_input=True, user_id=None, item_cnt=None):
     df_rank=pd.DataFrame(rank_dict)
     df_rank=df_rank[df_rank['item'].isin(df_user_notrated['item'])]
     df_rank=df_rank.sort_values(by=['scores','item'],ascending=[False,True])
-    print (df_rank.shape)
+    
     df=df_rank[:rec_num].round(4)
     df['user']=user
     df.rename(columns={'scores': 'prediction'}, inplace=True)
