@@ -18,8 +18,8 @@ import sys
 
 HOST = "147.46.15.238"
 PORT = "7000"
-USER = "DS2024_0027"
-PASSWD = "DS2024_0027"
+USER = "DS2024_0028"
+PASSWD = "DS2024_0028"
 DB = "DS_proj_03"
 
 connection = mysql.connector.connect(
@@ -80,18 +80,17 @@ def popularity_based_count(user_input=True, item_cnt=None):
     # TODO: remove sample, return actual recommendation result as df
     # YOUR CODE GOES HERE !
     # 쿼리의 결과를 sample 변수에 저장하세요.
+    query=f"""select item, count(rating) as count
+            from ratings 
+            where rating is not null 
+            group by item 
+            having item >= 150 and item < 350
+            order by count(rating) desc, item asc
+            limit {rec_num}"""
 
-    query = "SELECT r.item, COUNT(r.user) as count\
-            FROM ratings r\
-            WHERE r.rating is not NULL and r.item BETWEEN 150 and 349\
-            GROUP BY r.item\
-            ORDER BY COUNT(r.user) DESC, r.item ASC\
-            LIMIT "+str(rec_num)
-
-    sample = get_output(query).values.tolist()
-    
     # do not change column names
-    df = pd.DataFrame(sample, columns=['item', 'count'])
+    df=get_output(query)
+
     # TODO end
 
     # Do not change this part
@@ -111,34 +110,30 @@ def popularity_based_rating(user_input=True, item_cnt=None):
     print("=" * 99)
 
     # TODO: remove sample, return actual recommendation result as df
-    query= "SELECT sb2.item, ROUND(AVG(sb2.norm_rating),4) as avg_norm_rating\
-            FROM (\
-                SELECT \
-                    rt.item,\
-                    IF(sb.num_items = 1,(rt.rating-0/sb.max_rating-0), ((rt.rating - sb.min_rating) / sb.rating_range)) as norm_rating\
-                FROM(\
-                    SELECT \
-                        r.user,\
-                        MAX(r.rating) as max_rating,\
-                        MIN(r.rating) as min_rating ,\
-                        MAX(r.rating) - MIN(r.rating) as rating_range,\
-                        COUNT(r.item) as num_items\
-                    FROM ratings r\
-                    WHERE r.rating is not NULL\
-                    GROUP BY r.user\
-                    ) AS sb\
-                JOIN ratings rt ON rt.user = sb.user\
-            ) AS sb2\
-            WHERE sb2.item BETWEEN 150 and 349\
-            GROUP BY sb2.item\
-            ORDER BY avg_norm_rating DESC,sb2.item ASC\
-            LIMIT "+ str(rec_num)
-    #모두 같은 값인 경우는? ex) 5 5 5 5 ->  5-5/5-5 연산 불가
-
-    sample = get_output(query).values.tolist()
+    # YOUR CODE GOES HERE !
+    # 쿼리의 결과를 sample 변수에 저장하세요.
+    query=f"""
+        select item, round(avg((rating-min_rating)/(max_rating-min_rating)),4) as avg_rating
+        
+        from ratings natural join
+        (select user,max(rating) as max_rating,
+            case
+                when count(rating) = 1 then 0
+                else min(rating)
+            end as min_rating
+        from ratings group by user) as min_max_table
+        
+        group by item
+        
+        having item >= 150 and item < 350
+        
+        order by avg_rating desc, item
+        
+        limit {rec_num}
+        """
 
     # do not change column names
-    df = pd.DataFrame(sample, columns=['item', 'prediction'])
+    df=get_output(query)
     # TODO end
 
     # Do not change this part
@@ -163,52 +158,49 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
     print(f'Recommendations for user {user}')
 
     # TODO: remove sample, return actual recommendation result as df
-    query1="SELECT im.item_1 as it1,\
-                    IFNULL(sb2.norm_sim,0) as cal_sim,\
-                    im.item_2 as it2\
-            FROM item_similarity AS im\
-            LEFT JOIN(\
-                SELECT sb.item_1,\
-                        sb.sim,\
-                        sb.item_2,\
-                        ROUND(sb.sim/SUM(sb.sim) OVER (PARTITION BY item_1),4) AS norm_sim\
-                FROM (\
-                    SELECT item_1,\
-                            sim,\
-                            item_2,\
-                            ROW_NUMBER() OVER (PARTITION BY item_1 ORDER BY sim DESC, item_2 ASC) AS raking\
-                    FROM item_similarity\
-                    ) AS sb\
-                WHERE sb.raking <= 5\
-            ) AS sb2 ON im.item_1 = sb2.item_1 and im.item_2 = sb2.item_2;"    
-    mat_item_sim = get_output(query1).pivot(index='it1', columns='it2', values='cal_sim').astype(float)    
+    # YOUR CODE GOES HERE !
+    # 쿼리의 결과를 sample 변수에 저장하세요.
+    query_sim="""
+        select item_1, item_2, round(sim/sum(sim) over (partition by item_1),4) as normed_sim
+        from item_similarity natural join
+        (select item_1,item_2,row_number() over (partition by item_1 order by sim desc, item_2) as sim_ranking
+        from item_similarity) as sim_ranking_table
+        where sim_ranking_table.sim_ranking <= 5
+        """
+    df_similarity=get_output(query_sim)
+
+    query_rating=f"""
+        select user,item,
+        case 
+        when rating is null then round(avg(rating) over (partition by user),4)
+        else round(rating,4)
+        end as rating_null_filled
+        from ratings
+        """
+    df_rating=get_output(query_rating)
     
-    query2 = "SELECT r.item AS item, r.user AS user, r.rating AS rating, IFNULL(r.rating,rt.avg_rating) AS cal_rating\
-            FROM ratings r\
-            LEFT JOIN (\
-                SELECT item, AVG(rating) AS avg_rating\
-                FROM ratings\
-                GROUP BY item\
-            ) rt ON r.item = rt.item\
-            ORDER BY r.user ASC, r.item ASC;"
-    rs = get_output(query2)
-
-    mat_rating = rs.pivot(index='item', columns='user', values='cal_rating').astype(float)       
-    mat_predict= mat_item_sim.dot(mat_rating).astype(float).round(4)    
-
-    sort_result = mat_predict[user]#.sort_values(ascending=False)
-    sample = list(zip([user]*len(sort_result),sort_result.index,sort_result.tolist()))
+    query_user_notrated=f"""
+        select item
+        from ratings
+        where user={user} and rating is null
+        """
+    df_user_notrated=get_output(query_user_notrated)
     
-    # do not change column names    
-    df = pd.DataFrame(sample, columns=['user', 'item', 'prediction'])
-    for item_number in df['item'].unique():
-        rating = rs.loc[(rs['item'] == item_number) & (rs['user'] == user), 'rating'].values
-        if len(rating) == 0 or rating[0] is None:
-            pass
-        else:
-            df.drop(df[df['item'] == item_number].index, inplace=True)
+    scores=[]
+    unique_item=df_similarity.values[:,0][::5]
+    df_rating_user=df_rating[df_rating['user']==user]
+    for i_unique_item in unique_item:
+        i_similarity=df_similarity[df_similarity['item_1']==i_unique_item]
+        i_rating=df_rating_user[df_rating_user['item'].isin(i_similarity['item_2'])]
+        i_score=i_similarity.values[:,-1].astype(float)*i_rating.values[:,-1].astype(float)
+        scores.append(round(i_score.sum(),4))
+    
+    rank_dict={'item':unique_item,'scores':scores}
+    df_rank=pd.DataFrame(rank_dict)
+    df_rank=df_rank[df_rank['item'].isin(df_user_notrated['item'])]
+    df_rank=df_rank.sort_values(by=['scores','item'],ascending=[False,True])
 
-    df = df.sort_values(by=['prediction', 'item'], ascending=[False, True])[:rec_num]
+    df=df_rank[:rec_num]    
     # TODO end
 
     # Do not change this part
@@ -234,51 +226,49 @@ def ubcf(user_input=True, user_id=None, item_cnt=None):
     print(f'Recommendations for user {user}')
 
     # TODO: remove sample, return actual recommendation result as df
-    query1="SELECT um.user_1 as us1,\
-                    IFNULL(sb2.norm_sim,0) as cal_sim,\
-                    um.user_2 as us2\
-            FROM user_similarity AS um\
-            LEFT JOIN(\
-                SELECT sb.user_1,\
-                        sb.sim,\
-                        sb.user_2,\
-                        ROUND(sb.sim/SUM(sb.sim) OVER (PARTITION BY user_1),4) AS norm_sim\
-                FROM (\
-                    SELECT user_1,\
-                            sim,\
-                            user_2,\
-                            ROW_NUMBER() OVER (PARTITION BY user_1 ORDER BY sim DESC, user_2 ASC) AS raking\
-                    FROM user_similarity\
-                    ) AS sb\
-                WHERE sb.raking <= 5\
-            ) AS sb2 ON um.user_1 = sb2.user_1 and um.user_2 = sb2.user_2;"    
-    mat_user_sim = get_output(query1).pivot(index='us1', columns='us2', values='cal_sim').astype(float)    
+    # YOUR CODE GOES HERE !
+    # 쿼리의 결과를 sample 변수에 저장하세요.
+    query_sim="""
+        select user_1, user_2, round(sim/sum(sim) over (partition by user_1),4) as normed_sim
+        from user_similarity natural join
+        (select user_1,user_2,row_number() over (partition by user_1 order by sim desc, user_2) as sim_ranking
+        from user_similarity) as sim_ranking_table
+        where sim_ranking_table.sim_ranking <= 5
+        """
+    df_similarity=get_output(query_sim)
+    df_similarity_user=df_similarity[df_similarity['user_1']==user]
 
-    query2 = "SELECT r.item AS item, r.user AS user, r.rating AS rating, IFNULL(r.rating,rt.avg_rating) AS cal_rating\
-            FROM ratings r\
-            LEFT JOIN (\
-                SELECT user, AVG(rating) AS avg_rating\
-                FROM ratings\
-                GROUP BY user\
-            ) rt ON r.user = rt.user\
-            ORDER BY r.user ASC, r.item ASC;"
-    rs= get_output(query2)    
-    mat_rating =rs.pivot(index='item', columns='user', values='cal_rating').astype(float)        
-    mat_predict= mat_rating.dot(mat_user_sim.T).astype(float).round(4) 
+    query_rating=f"""
+        select user,item,
+        case 
+        when rating is null then round(avg(rating) over (partition by user),4)
+        else round(rating,4)
+        end as rating_null_filled
+        from ratings
+        """
+    df_rating=get_output(query_rating)
     
-    sort_result = mat_predict[user]#.sort_values(ascending=False)
-    sample = list(zip([user]*len(sort_result),sort_result.index,sort_result.tolist()))    
-
-    # do not change column names    
-    df = pd.DataFrame(sample, columns=['user', 'item', 'prediction'])
-
-    for item_number in df['item'].unique():
-        rating = rs.loc[(rs['item'] == item_number) & (rs['user'] == user), 'rating'].values
-        if len(rating) == 0 or rating[0] is None:
-            pass
-        else:
-            df.drop(df[df['item'] == item_number].index, inplace=True)
-    df = df.sort_values(by=['prediction', 'item'], ascending=[False, True])[:rec_num]
+    query_user_notrated=f"""
+        select item
+        from ratings
+        where user={user} and rating is null
+        """
+    df_user_notrated=get_output(query_user_notrated)
+    
+    scores=[]
+    unique_item=df_rating[df_rating['user']==0]['item']
+    for i_unique_item in unique_item:
+        i_similarity=df_rating[df_rating['item']==i_unique_item]
+        i_rating=i_similarity[i_similarity['user'].isin(df_similarity_user['user_2'])]
+        i_score=df_similarity_user.values[:,-1].astype(float)*i_rating.values[:,-1].astype(float)
+        scores.append(round(i_score.sum(),4))
+        
+    rank_dict={'item':unique_item,'scores':scores}
+    df_rank=pd.DataFrame(rank_dict)
+    df_rank=df_rank[df_rank['item'].isin(df_user_notrated['item'])]
+    df_rank=df_rank.sort_values(by=['scores','item'],ascending=[False,True])
+    print (df_rank.shape)
+    df=df_rank[:rec_num]
     # TODO end
 
     # Do not change this part
