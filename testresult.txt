@@ -1,7 +1,87 @@
 ################################
 ########   Test Start   ########
 ################################
-uid: 0 / rec_num: 0 / result: |pbc - Fail||ibcf - Fail||ubcf - Fail|
-uid: 0 / rec_num: 100 / result: |ibcf - Fail||ubcf - Fail|
-uid: 0 / rec_num: 200 / result: |ibcf - Fail||ubcf - Fail|
-uid: 0 / rec_num: 300 / result: |ibcf - Fail||ubcf - Fail|
+uid: 0 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 11 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 22 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 33 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 44 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 55 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 66 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 77 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 88 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 99 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 110 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 121 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 132 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 143 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 154 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 165 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 176 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 187 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 198 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 209 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 220 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 231 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 242 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 253 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 264 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 275 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+uid: 286 / rec_num: 0 / result: 
+|pbc - Fail|
+ pbc length diff.
+################################
+#########   Test End   #########
+################################

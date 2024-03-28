@@ -1,4 +1,5 @@
 ## Check List
+0. Item간, User간 평균 계산할때도 소수점 4자리 반올림 하는지
 1. 같은 input값 넣어서 다른 사람들 결과랑 비교
 2. SQL query Logic 문제 없는지
 3. SQL query후 결과가 원하는 형태로 정렬되어 결과에 영향을 안 미치는지

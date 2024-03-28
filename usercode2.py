@@ -172,7 +172,7 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
     query_rating=f"""
         select user,item,
         case 
-        when rating is null then round(avg(rating) over (partition by user),4)
+        when rating is null then round(avg(rating) over (partition by item),4)
         else round(rating,4)
         end as rating_null_filled
         from ratings
@@ -185,7 +185,8 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
         where user={user} and rating is null
         """
     df_user_notrated=get_output(query_user_notrated)
-    
+
+
     scores=[]
     unique_item=df_similarity.values[:,0][::5]
     df_rating_user=df_rating[df_rating['user']==user]
@@ -200,7 +201,10 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
     df_rank=df_rank[df_rank['item'].isin(df_user_notrated['item'])]
     df_rank=df_rank.sort_values(by=['scores','item'],ascending=[False,True])
 
-    df=df_rank[:rec_num]    
+    df=df_rank[:rec_num].round(4)
+    df['user']=user
+    df.rename(columns={'scores': 'prediction'}, inplace=True)
+    df = df[['user', 'item', 'prediction']]
     # TODO end
 
     # Do not change this part
@@ -268,7 +272,10 @@ def ubcf(user_input=True, user_id=None, item_cnt=None):
     df_rank=df_rank[df_rank['item'].isin(df_user_notrated['item'])]
     df_rank=df_rank.sort_values(by=['scores','item'],ascending=[False,True])
     print (df_rank.shape)
-    df=df_rank[:rec_num]
+    df=df_rank[:rec_num].round(4)
+    df['user']=user
+    df.rename(columns={'scores': 'prediction'}, inplace=True)
+    df = df[['user', 'item', 'prediction']]
     # TODO end
 
     # Do not change this part
