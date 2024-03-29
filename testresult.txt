@@ -1,6 +1,0 @@
-################################
-########   Test Start   ########
-################################
-# uid: 0 / rec_num: 453 / result: All Pass
-# uid: 11 / rec_num: 453 / result: All Pass
-# uid: 22 / rec_num: 453 / result: All Pass
