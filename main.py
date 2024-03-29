@@ -183,7 +183,7 @@ def ibcf(user_input=True, user_id=None, item_cnt=None):
             ) AS sb2 ON im.item_1 = sb2.item_1 and im.item_2 = sb2.item_2;"    
     mat_item_sim = get_output(query1).pivot(index='it1', columns='it2', values='cal_sim').astype(float)    
     
-    query2 = "SELECT r.item AS item, r.user AS user, r.rating AS rating, RIFNULL(r.rating,rt.avg_rating) AS cal_rating\
+    query2 = "SELECT r.item AS item, r.user AS user, r.rating AS rating, IFNULL(r.rating,rt.avg_rating) AS cal_rating\
             FROM ratings r\
             LEFT JOIN (\
                 SELECT item, AVG(rating) AS avg_rating\
