@@ -4,35 +4,3 @@
 # uid: 0 / rec_num: 453 / result: All Pass
 # uid: 11 / rec_num: 453 / result: All Pass
 # uid: 22 / rec_num: 453 / result: All Pass
-# uid: 33 / rec_num: 453 / result: All Pass
-# uid: 44 / rec_num: 453 / result: All Pass
-# uid: 55 / rec_num: 453 / result: All Pass
-# uid: 66 / rec_num: 453 / result: All Pass
-# uid: 77 / rec_num: 453 / result: All Pass
-# uid: 88 / rec_num: 453 / result: All Pass
-# uid: 99 / rec_num: 453 / result: All Pass
-# uid: 110 / rec_num: 453 / result: All Pass
-# uid: 121 / rec_num: 453 / result: All Pass
-# uid: 132 / rec_num: 453 / result: 
-|ibcf - Fail|
-------------------------------------------------------------------------
-code1: |    132 |    163 |       4.0062 |
-code2: |    132 |    163 |       4.0063 |
-
-# uid: 143 / rec_num: 453 / result: All Pass
-# uid: 154 / rec_num: 453 / result: All Pass
-# uid: 165 / rec_num: 453 / result: All Pass
-# uid: 176 / rec_num: 453 / result: All Pass
-# uid: 187 / rec_num: 453 / result: All Pass
-# uid: 198 / rec_num: 453 / result: All Pass
-# uid: 209 / rec_num: 453 / result: All Pass
-# uid: 220 / rec_num: 453 / result: All Pass
-# uid: 231 / rec_num: 453 / result: All Pass
-# uid: 242 / rec_num: 453 / result: All Pass
-# uid: 253 / rec_num: 453 / result: All Pass
-# uid: 264 / rec_num: 453 / result: All Pass
-# uid: 275 / rec_num: 453 / result: All Pass
-# uid: 286 / rec_num: 453 / result: All Pass
-################################
-#########   Test End   #########
-################################
